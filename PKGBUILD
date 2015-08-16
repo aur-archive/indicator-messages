@@ -1,0 +1,62 @@
+# Maintainer: Charles Bos <charlesbos1 AT gmail>
+# Contributor: Xiao-Long Chen <chenxiaolong@cxl.epac.to>
+# Contributor: György Balló <ballogy@freestart.hu>
+# Contributor: thn81 <root@scrat>
+
+pkgname=indicator-messages
+_actual_ver=13.10.1
+_extra_ver=+14.04.20140207
+_source_date=20140207
+_translations=20130419
+pkgver=${_actual_ver}.${_source_date}
+pkgrel=3
+pkgdesc="A place on the user's desktop that collects messages that need a response"
+arch=('i686' 'x86_64')
+url="https://launchpad.net/indicator-messages"
+license=('GPL')
+depends=('hicolor-icon-theme' 'libindicator-bzr')
+makedepends=('gobject-introspection' 'gtk-doc' 'intltool' 'vala')
+groups=('unity')
+options=('!libtool')
+install=indicator-messages.install
+source=("https://launchpad.net/ubuntu/+archive/primary/+files/indicator-messages_${_actual_ver}${_extra_ver}.orig.tar.gz"
+        "https://dl.dropboxusercontent.com/u/486665/Translations/translations-${_translations}-indicator-messages.tar.gz"
+        '0001_autoconf.patch')
+sha512sums=('2c7795f412200c992ebc435b0d3ac3ab3c602030fa91c9b3a79a2f6323bed82c3852992d4707e1d4e7faf5c2dda6e314a6f6a7d5545d05322ffba8fa8d7ecabf'
+            'c880b0873651a0e995d273fe989afad3435cac75fbdf4b1d26fa3b48c718d06c57d5f196093f5989a9d3c697d5c45b7239d3d464ac071a945a87efed7142af57'
+            '75c5f0c2381b76b053ad980bc371772cbb6626ef5c7e01a3b212d42460ed8a5ea17c82ab8b6146992aca098c3a465b0b1075e460d2d5333ef6de193e5cf73e8a')
+
+prepare() {
+  cd "${srcdir}/${pkgname}-${_actual_ver}${_extra_ver}"
+
+  patch -p1 -i "${srcdir}/0001_autoconf.patch"
+
+  msg "Merging translations from ${_translations}"
+  rm -f po/LINGUAS po/*.pot
+  mv "${srcdir}"/po/*.pot po/
+  for i in "${srcdir}"/po/*.po; do
+    FILE=$(sed -n "s|.*/${pkgname}-||p" <<< ${i})
+    mv ${i} po/${FILE}
+    echo ${FILE%.*} >> po/LINGUAS
+  done
+}
+
+build() {
+  cd "${srcdir}/${pkgname}-${_actual_ver}${_extra_ver}"
+
+  export CFLAGS="${CFLAGS} -Wno-error=deprecated-declarations -Wno-error=return-type"
+
+  gtkdocize
+  intltoolize -f
+  autoreconf -vfi
+  ./configure --prefix=/usr --libexecdir=/usr/lib/${pkgname} --disable-static
+  make
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${_actual_ver}${_extra_ver}"
+
+  make DESTDIR="${pkgdir}/" install
+}
+
+# vim:set ts=2 sw=2 et:
